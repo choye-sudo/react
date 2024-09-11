@@ -6,7 +6,9 @@ const Person = () => {
   const [people, setPeople] = useState([]);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState(""); // 정렬 기준
-  const [sortOrder, setSortOrder] = useState("asc"); // 정렬 순서 (asc: 오름차순, desc: 내림차순)
+  const [sortOrder, setSortOrder] = useState("asc"); // 정렬 순서
+  const [isEditing, setIsEditing] = useState(false); // 수정 모드 여부
+  const [editIndex, setEditIndex] = useState(null); // 수정할 사람의 인덱스
 
   const onChangePerson = (e) => {
     const { name, value } = e.target;
@@ -14,27 +16,40 @@ const Person = () => {
   };
 
   const onSubmit = () => {
-    setPerson({ ...init });
-    setPeople([...people, { ...person }]);
+    if (isEditing) {
+      // 수정 모드일 때
+      const updatedPeople = [...people];
+      updatedPeople[editIndex] = person;
+      setPeople(updatedPeople);
+      setIsEditing(false); // 수정 모드 종료
+      setEditIndex(null);
+    } else {
+      // 새로 추가할 때
+      setPeople([...people, { ...person }]);
+    }
+    setPerson({ ...init }); // 입력 필드 초기화
+  };
+
+  // 수정 버튼 클릭 시
+  const updatePerson = (index) => {
+    setPerson(people[index]); // 해당 인덱스의 사용자 정보를 입력 필드로 불러옴
+    setIsEditing(true);
+    setEditIndex(index); // 수정할 인덱스를 저장
+  };
+
+  // 삭제 버튼 클릭 시
+  const deletePerson = (index) => {
+    const updatedPeople = people.filter((_, i) => i !== index); // 해당 인덱스의 사용자 삭제
+    setPeople(updatedPeople);
   };
 
   const handleSort = (key) => {
     if (sortKey === key) {
-      // 이미 같은 키로 정렬 중이면 순서를 반대로 변경
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
-      // 새로운 정렬 기준으로 변경
       setSortKey(key);
-      setSortOrder("asc"); // 기본 오름차순으로 설정
+      setSortOrder("asc");
     }
-  };
-
-  const updatePerson = () =>{
-
-  };
-
-  const deletePerson = () =>{
-    
   };
 
   return (
@@ -57,7 +72,9 @@ const Person = () => {
         />
       </div>
       <div>
-        <button onClick={onSubmit}>등록</button>
+        <button onClick={onSubmit}>
+          {isEditing ? "수정 완료" : "등록"}
+        </button>
       </div>
       <br />
       <input onChange={(e) => setSearch(e.target.value)} placeholder="검색" />
@@ -65,21 +82,21 @@ const Person = () => {
       <table border={1}>
         <thead>
           <tr>
-            {/* 클릭하면 정렬 기준을 name으로 변경 */}
             <th onClick={() => handleSort("name")}>
               이름 {sortKey === "name" && (sortOrder === "asc" ? "▲" : "▼")}
             </th>
-            {/* 클릭하면 정렬 기준을 age로 변경 */}
             <th onClick={() => handleSort("age")}>
               나이 {sortKey === "age" && (sortOrder === "asc" ? "▲" : "▼")}
             </th>
+            <th>수정</th>
+            <th>삭제</th>
           </tr>
         </thead>
         <tbody>
           {people
-            .filter(({ name }) => name.includes(search)) // 검색어 필터링
+            .filter(({ name }) => name.includes(search)) // 검색 필터링
             .sort((a, b) => {
-              // 정렬 기준에 따른 정렬 처리
+              // 정렬
               if (sortKey === "name") {
                 return sortOrder === "asc"
                   ? a.name.localeCompare(b.name)
@@ -87,14 +104,18 @@ const Person = () => {
               } else if (sortKey === "age") {
                 return sortOrder === "asc" ? a.age - b.age : b.age - a.age;
               }
-              return 0; // 정렬 기준이 없으면 그대로 반환
+              return 0;
             })
             .map(({ name, age }, index) => (
               <tr key={index}>
                 <td>{name}</td>
                 <td>{age}</td>
-                <td><button onClick={() => updatePerson(name, age)}>수정</button></td>
-                <td><button onClick={() => deletePerson(name)}>삭제</button></td>
+                <td>
+                  <button onClick={() => updatePerson(index)}>수정</button>
+                </td>
+                <td>
+                  <button onClick={() => deletePerson(index)}>삭제</button>
+                </td>
               </tr>
             ))}
         </tbody>
